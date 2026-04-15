@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EventSphere — Event Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap">
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --card:      #1a1a26;
+  --border:    #2a2a3d;
+  --accent:    #6c63ff;
+  --accent2:   #ff6584;
+  --accent3:   #43e0b4;
+  --text:      #e8e8f0;
+  --muted:     #7a7a99;
+  --success:   #43e0b4;
+  --danger:    #ff6584;
+  --warning:   #ffc107;
+  --radius:    12px;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── NOISE TEXTURE ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: .4;
+}
+
+/* ── LAYOUT ── */
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 240px; background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+  transition: transform .3s;
+}
+.sidebar-logo {
+  padding: 28px 24px 20px;
+  font-family: var(--font-head);
+  font-size: 20px; font-weight: 800;
+  letter-spacing: -0.5px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo span { color: var(--accent); }
+.nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 8px;
+  cursor: pointer; color: var(--muted);
+  font-weight: 500; font-size: 14px;
+  transition: all .2s; border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item:hover { color: var(--text); background: rgba(108,99,255,.1); }
+.nav-item.active { color: var(--accent); background: rgba(108,99,255,.15); }
+.nav-item .icon { font-size: 18px; width: 20px; text-align: center; }
+.sidebar-user {
+  padding: 16px; border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.user-badge {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px; background: var(--card); border-radius: 8px;
+}
+.avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: white; flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-weight: 600; font-size: 13px; truncate; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { color: var(--muted); font-size: 11px; text-transform: capitalize; }
+
+.main { margin-left: 240px; flex: 1; padding: 32px; min-height: 100vh; position: relative; z-index: 1; }
+
+/* ── HEADER ── */
+.page-header { margin-bottom: 28px; }
+.page-title { font-family: var(--font-head); font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+.page-subtitle { color: var(--muted); margin-top: 4px; font-weight: 300; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  transition: border-color .2s;
+}
+.card:hover { border-color: rgba(108,99,255,.3); }
+
+/* ── STAT CARDS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.stat-card.s1::before { background: var(--accent); }
+.stat-card.s2::before { background: var(--accent2); }
+.stat-card.s3::before { background: var(--accent3); }
+.stat-card.s4::before { background: var(--warning); }
+.stat-card.s5::before { background: #a78bfa; }
+.stat-card.s6::before { background: #fb923c; }
+.stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+.stat-value { font-family: var(--font-head); font-size: 32px; font-weight: 800; margin: 4px 0; }
+.stat-icon { font-size: 28px; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); opacity: .15; }
+
+/* ── GRID ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+/* ── EVENTS GRID ── */
+.events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.event-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  transition: all .25s; cursor: pointer;
+}
+.event-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(108,99,255,.15); }
+.event-card-top { padding: 20px; }
+.event-cat {
+  font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  display: inline-block; padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
+}
+.cat-conference { background: rgba(108,99,255,.2); color: var(--accent); }
+.cat-workshop   { background: rgba(67,224,180,.2); color: var(--accent3); }
+.cat-concert    { background: rgba(255,101,132,.2); color: var(--accent2); }
+.cat-sports     { background: rgba(251,146,60,.2);  color: #fb923c; }
+.cat-cultural   { background: rgba(167,139,250,.2); color: #a78bfa; }
+.cat-other      { background: rgba(122,122,153,.2); color: var(--muted); }
+
+.event-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.event-meta { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+.event-meta span::before { margin-right: 6px; }
+.event-card-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 20px; border-top: 1px solid var(--border);
+  background: rgba(255,255,255,.02);
+}
+.event-price { font-family: var(--font-head); font-weight: 700; font-size: 16px; }
+.event-price.free { color: var(--accent3); }
+.status-badge {
+  font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 20px;
+}
+.status-upcoming  { background: rgba(108,99,255,.2); color: var(--accent); }
+.status-completed { background: rgba(122,122,153,.2); color: var(--muted); }
+.status-ongoing   { background: rgba(67,224,180,.2);  color: var(--accent3); }
+.status-cancelled { background: rgba(255,101,132,.2); color: var(--danger); }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: rgba(255,255,255,.03); }
+th { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); padding: 14px 16px; text-align: left; }
+td { padding: 13px 16px; border-top: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+tbody tr:hover { background: rgba(255,255,255,.02); }
+
+/* ── FORMS ── */
+.form-group { margin-bottom: 18px; }
+label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; letter-spacing: .3px; }
+input, select, textarea {
+  width: 100%; padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 14px;
+  transition: border-color .2s;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+textarea { resize: vertical; min-height: 80px; }
+select option { background: var(--surface); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 8px; font-family: var(--font-body);
+  font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+  transition: all .2s; text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #5a52e0; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(108,99,255,.35); }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: rgba(255,101,132,.15); color: var(--danger); border: 1px solid rgba(255,101,132,.3); }
+.btn-danger:hover { background: rgba(255,101,132,.25); }
+.btn-success { background: rgba(67,224,180,.15); color: var(--accent3); border: 1px solid rgba(67,224,180,.3); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.75);
+  backdrop-filter: blur(4px); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 32px; width: min(560px, 95vw);
+  max-height: 90vh; overflow-y: auto;
+  transform: scale(.95); transition: transform .2s;
+}
+.modal-overlay.open .modal { transform: scale(1); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.modal-title { font-family: var(--font-head); font-size: 20px; font-weight: 800; }
+.modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 22px; padding: 4px; }
+.modal-close:hover { color: var(--text); }
+
+/* ── TOAST ── */
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+.toast {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 18px; min-width: 260px;
+  display: flex; align-items: center; gap: 12px;
+  animation: slideIn .3s ease;
+  box-shadow: 0 8px 30px rgba(0,0,0,.4);
+}
+.toast.success { border-color: rgba(67,224,180,.4); }
+.toast.error   { border-color: rgba(255,101,132,.4); }
+.toast-icon { font-size: 18px; }
+.toast-msg  { font-size: 14px; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ── AUTH PAGE ── */
+.auth-page {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 60% 30%, rgba(108,99,255,.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 20% 80%, rgba(255,101,132,.08) 0%, transparent 50%), var(--bg);
+}
+.auth-card { width: min(420px, 95vw); }
+.auth-logo { font-family: var(--font-head); font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.auth-logo span { color: var(--accent); }
+.auth-tagline { color: var(--muted); margin-bottom: 32px; font-size: 14px; }
+.auth-tabs { display: flex; gap: 0; margin-bottom: 24px; background: var(--surface); border-radius: 8px; padding: 4px; border: 1px solid var(--border); }
+.auth-tab { flex: 1; padding: 8px; text-align: center; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; border: none; background: none; color: var(--muted); }
+.auth-tab.active { background: var(--accent); color: white; }
+.divider { text-align: center; color: var(--muted); font-size: 13px; margin: 16px 0; position: relative; }
+.divider::before, .divider::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: var(--border); }
+.divider::before { left: 0; } .divider::after { right: 0; }
+
+/* ── SEARCH/FILTER BAR ── */
+.filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-bar input, .filter-bar select { flex: 1; min-width: 140px; }
+
+/* ── SECTION TITLE ── */
+.section-title { font-family: var(--font-head); font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.section-title .badge { font-size: 12px; font-weight: 600; background: rgba(108,99,255,.2); color: var(--accent); padding: 2px 10px; border-radius: 20px; }
+
+/* ── CATEGORY PILL ── */
+.rating { color: var(--warning); letter-spacing: 2px; }
+
+/* ── EMPTY STATE ── */
+.empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* ── ANALYTICS BARS ── */
+.bar-group { margin-bottom: 16px; }
+.bar-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.bar-track { height: 8px; background: var(--surface); border-radius: 4px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 4px; background: var(--accent); transition: width 1s ease; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; padding: 16px; }
+  .grid-2, .form-row { grid-template-columns: 1fr; }
+}
+
+/* ── LOADING ── */
+.spinner {
+  width: 20px; height: 20px; border: 2px solid rgba(108,99,255,.3);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .6s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loader-full { display: flex; align-items: center; justify-content: center; height: 300px; gap: 12px; color: var(--muted); }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- AUTH PAGE -->
+<div class="auth-page" id="authPage">
+  <div class="auth-card card">
+    <div class="auth-logo">Event<span>Sphere</span></div>
+    <div class="auth-tagline">DBMS Project — Event Management System</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="login()">
+        Sign In →
+      </button>
+      <div class="divider">demo accounts</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="fillDemo('admin@event.com','password123')">Admin</button>
+        <button class="btn btn-ghost btn-sm" onclick="fillDemo('rahul@event.com','password123')">Organizer</button>
+        <button class="btn btn-ghost btn-sm" onclick="fillDemo('aditya@event.com','password123')">Attendee</button>
+      </div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerForm" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label>Full Name</label><input type="text" id="regName" placeholder="Your name"></div>
+        <div class="form-group"><label>Phone</label><input type="text" id="regPhone" placeholder="10 digits"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" id="regEmail" placeholder="your@email.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="regPassword" placeholder="Min 6 chars"></div>
+      <div class="form-group">
+        <label>Role</label>
+        <select id="regRole">
+          <option value="attendee">Attendee</option>
+          <option value="organizer">Organizer</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="register()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="appPage" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">Event<span>Sphere</span></div>
+    <nav class="nav">
+      <button class="nav-item active" onclick="navigate('dashboard')" data-page="dashboard">
+        <span class="icon">📊</span> Dashboard
+      </button>
+      <button class="nav-item" onclick="navigate('events')" data-page="events">
+        <span class="icon">🎪</span> Events
+      </button>
+      <button class="nav-item" onclick="navigate('my-registrations')" data-page="my-registrations">
+        <span class="icon">🎫</span> My Registrations
+      </button>
+      <button class="nav-item" onclick="navigate('analytics')" data-page="analytics">
+        <span class="icon">📈</span> Analytics
+      </button>
+      <button class="nav-item organizer-only" onclick="navigate('manage-events')" data-page="manage-events" style="display:none">
+        <span class="icon">⚙️</span> Manage Events
+      </button>
+      <button class="nav-item organizer-only" onclick="navigate('venues')" data-page="venues" style="display:none">
+        <span class="icon">🏛️</span> Venues
+      </button>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-badge">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-info">
+          <div class="user-name" id="userName">—</div>
+          <div class="user-role" id="userRole">—</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px;justify-content:center" onclick="logout()">Logout</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main" id="mainContent">
+    <!-- Pages injected here -->
+  </main>
+</div>
+
+<!-- CREATE EVENT MODAL -->
+<div class="modal-overlay" id="eventModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="eventModalTitle">Create New Event</div>
+      <button class="modal-close" onclick="closeModal('eventModal')">✕</button>
+    </div>
+    <div class="form-group"><label>Event Title *</label><input type="text" id="evTitle" placeholder="Enter event title"></div>
+    <div class="form-group"><label>Description</label><textarea id="evDesc" placeholder="Event description..."></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Date *</label><input type="date" id="evDate"></div>
+      <div class="form-group"><label>Category *</label>
+        <select id="evCategory">
+          <option value="conference">Conference</option>
+          <option value="workshop">Workshop</option>
+          <option value="concert">Concert</option>
+          <option value="sports">Sports</option>
+          <option value="cultural">Cultural</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Start Time *</label><input type="time" id="evStart"></div>
+      <div class="form-group"><label>End Time *</label><input type="time" id="evEnd"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Max Capacity *</label><input type="number" id="evCapacity" placeholder="e.g. 200" min="1"></div>
+      <div class="form-group"><label>Ticket Price (₹)</label><input type="number" id="evPrice" placeholder="0 = Free" min="0" step="0.01"></div>
+    </div>
+    <div class="form-group"><label>Venue *</label>
+      <select id="evVenue"></select>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('eventModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- EVENT DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" style="width:min(640px,95vw)">
+    <div class="modal-header">
+      <div class="modal-title" id="detailTitle">Event Details</div>
+      <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    </div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let token = null, currentUser = null, editingEventId = null;
+const API = '/api';
+
+// ── UTILS ──
+function $id(id) { return document.getElementById(id); }
+function toast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span><span class="toast-msg">${msg}</span>`;
+  $id('toastContainer').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    ...opts
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; }
+function fmtCurrency(n) { return '₹' + (Number(n) || 0).toLocaleString('en-IN'); }
+function catClass(c) { return `cat-${c || 'other'}`; }
+function statusClass(s) { return `status-${s || 'upcoming'}`; }
+function stars(r) { const n = Math.round(r || 0); return '★'.repeat(n) + '☆'.repeat(5-n); }
+
+// ── AUTH ──
+function switchAuthTab(tab) {
+  $id('loginForm').style.display = tab === 'login' ? '' : 'none';
+  $id('registerForm').style.display = tab === 'register' ? '' : 'none';
+  document.querySelectorAll('.auth-tab').forEach((el, i) => el.classList.toggle('active', (i===0) === (tab==='login')));
+}
+function fillDemo(email, pass) {
+  $id('loginEmail').value = email; $id('loginPassword').value = pass;
+}
+async function login() {
+  try {
+    const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email: $id('loginEmail').value, password: $id('loginPassword').value }) });
+    token = data.token; currentUser = data.user;
+    localStorage.setItem('ems_token', token); localStorage.setItem('ems_user', JSON.stringify(currentUser));
+    initApp();
+  } catch(e) { toast(e.message, 'error'); }
+}
+async function register() {
+  try {
+    await api('/auth/register', { method: 'POST', body: JSON.stringify({ name: $id('regName').value, email: $id('regEmail').value, phone: $id('regPhone').value, password: $id('regPassword').value, role: $id('regRole').value }) });
+    toast('Account created! Please login.'); switchAuthTab('login');
+  } catch(e) { toast(e.message, 'error'); }
+}
+function logout() {
+  token = null; currentUser = null;
+  localStorage.removeItem('ems_token'); localStorage.removeItem('ems_user');
+  $id('authPage').style.display = '';
+  $id('appPage').style.display = 'none';
+}
+
+// ── APP INIT ──
+function initApp() {
+  $id('authPage').style.display = 'none';
+  $id('appPage').style.display = '';
+  $id('userName').textContent = currentUser.name;
+  $id('userRole').textContent = currentUser.role;
+  $id('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+  // Show organizer-only nav items
+  document.querySelectorAll('.organizer-only').forEach(el => {
+    el.style.display = ['admin','organizer'].includes(currentUser.role) ? '' : 'none';
+  });
+  navigate('dashboard');
+}
+
+function navigate(page) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+  const content = $id('mainContent');
+  content.innerHTML = `<div class="loader-full"><div class="spinner"></div> Loading...</div>`;
+  pages[page]();
+}
+
+// ── MODAL ──
+function openModal(id) { $id(id).classList.add('open'); }
+function closeModal(id) { $id(id).classList.remove('open'); }
+
+// ── PAGES ──
+const pages = {
+
+  // DASHBOARD
+  async dashboard() {
+    const main = $id('mainContent');
+    try {
+      const [summary, catData] = await Promise.all([
+        api('/events/summary'),
+        api('/events/by-category')
+      ]);
+      const s = summary;
+      const maxRev = Math.max(...catData.map(c => c.events), 1);
+      main.innerHTML = `
+        <div class="page-header">
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle">Welcome back, ${currentUser.name}!</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card s1"><div class="stat-label">Total Events</div><div class="stat-value">${s.total_events||0}</div><div class="stat-icon">🎪</div></div>
+          <div class="stat-card s2"><div class="stat-label">Registrations</div><div class="stat-value">${s.paid_registrations||0}</div><div class="stat-icon">🎫</div></div>
+          <div class="stat-card s3"><div class="stat-label">Total Revenue</div><div class="stat-value">${fmtCurrency(s.total_revenue)}</div><div class="stat-icon">💰</div></div>
+          <div class="stat-card s4"><div class="stat-label">Attendees</div><div class="stat-value">${s.total_attendees||0}</div><div class="stat-icon">👥</div></div>
+          <div class="stat-card s5"><div class="stat-label">Avg Rating</div><div class="stat-value">${s.overall_rating||'—'}</div><div class="stat-icon">⭐</div></div>
+          <div class="stat-card s6"><div class="stat-label">Upcoming</div><div class="stat-value">${s.upcoming_events||0}</div><div class="stat-icon">📅</div></div>
+        </div>
+        <div class="card">
+          <div class="section-title">Events by Category</div>
+          ${catData.map(c => `
+            <div class="bar-group">
+              <div class="bar-label"><span>${c.category.charAt(0).toUpperCase()+c.category.slice(1)}</span><span>${c.events} events · ${c.registrations} registered</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:${(c.events/maxRev*100)}%"></div></div>
+            </div>`).join('')}
+        </div>`;
+    } catch(e) { main.innerHTML = `<div class="empty"><div class="empty-icon">❌</div><div>${e.message}</div></div>`; }
+  },
+
+  // EVENTS
+  async events() {
+    const main = $id('mainContent');
+    main.innerHTML = `
+      <div class="page-header"><div class="page-title">Explore Events</div><div class="page-subtitle">Browse and register for events</div></div>
+      <div class="filter-bar">
+        <input type="text" id="searchQ" placeholder="🔍  Search events..." oninput="filterEvents()" style="max-width:240px">
+        <select id="filterCat" onchange="filterEvents()"><option value="">All Categories</option><option>conference</option><option>workshop</option><option>concert</option><option>sports</option><option>cultural</option><option>other</option></select>
+        <select id="filterStatus" onchange="filterEvents()"><option value="">All Status</option><option>upcoming</option><option>completed</option><option>cancelled</option></select>
+      </div>
+      <div class="events-grid" id="eventsGrid"><div class="loader-full"><div class="spinner"></div></div></div>`;
+
+    window._allEvents = await api('/events');
+    renderEvents(window._allEvents);
+  },
+
+  // MY REGISTRATIONS
+  async ['my-registrations']() {
+    const main = $id('mainContent');
+    main.innerHTML = `<div class="page-header"><div class="page-title">My Registrations</div><div class="page-subtitle">Events you've signed up for</div></div><div id="myRegContent"><div class="loader-full"><div class="spinner"></div></div></div>`;
+    try {
+      const regs = await api('/registrations/my');
+      const el = $id('myRegContent');
+      if (!regs.length) { el.innerHTML = `<div class="empty"><div class="empty-icon">🎫</div><div>No registrations yet.<br><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="navigate('events')">Browse Events</button></div></div>`; return; }
+      el.innerHTML = `<div class="table-wrap"><table>
+        <thead><tr><th>Event</th><th>Date</th><th>Seat</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${regs.map(r => `
+          <tr>
+            <td><strong>${r.event_title}</strong></td>
+            <td>${fmtDate(r.event_date)}</td>
+            <td>${r.seat_number || '—'}</td>
+            <td>${r.amount_paid > 0 ? fmtCurrency(r.amount_paid) : '<span style="color:var(--accent3)">Free</span>'}</td>
+            <td><span class="status-badge ${r.payment_status === 'paid' ? 'status-upcoming' : r.payment_status === 'refunded' ? 'status-cancelled' : 'status-ongoing'}">${r.payment_status}</span></td>
+            <td>
+              ${r.payment_status === 'pending' ? `<button class="btn btn-success btn-sm" onclick="payReg(${r.reg_id})">Pay</button>` : ''}
+              <button class="btn btn-danger btn-sm" onclick="cancelReg(${r.reg_id})">Cancel</button>
+            </td>
+          </tr>`).join('')}
+        </tbody></table></div>`;
+    } catch(e) { $id('myRegContent').innerHTML = `<div class="empty">${e.message}</div>`; }
+  },
+
+  // ANALYTICS
+  async analytics() {
+    const main = $id('mainContent');
+    main.innerHTML = `<div class="page-header"><div class="page-title">Analytics & Reports</div><div class="page-subtitle">Powered by SQL VIEWs, JOINs, UNION, and Aggregate Functions</div></div><div id="analyticsContent"><div class="loader-full"><div class="spinner"></div></div></div>`;
+    try {
+      const data = await api('/analytics/dashboard');
+      const [topAtt, noReg, noFb] = await Promise.all([
+        api('/analytics/top-attendees'),
+        api('/analytics/events-no-registration'),
+        api('/analytics/events-no-feedback')
+      ]);
+      const el = $id('analyticsContent');
+      el.innerHTML = `
+        <div class="grid-2" style="margin-bottom:20px">
+          <div class="card">
+            <div class="section-title">Top Events by Revenue <span class="badge">vw_event_stats VIEW</span></div>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Event</th><th>Regs</th><th>Revenue</th></tr></thead>
+              <tbody>${data.topEvents.map(e => `<tr><td>${e.title}</td><td>${e.registrations}</td><td>${fmtCurrency(e.revenue)}</td></tr>`).join('')}</tbody>
+            </table></div>
+          </div>
+          <div class="card">
+            <div class="section-title">Top Attendees <span class="badge">JOIN + GROUP BY</span></div>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Attendee</th><th>Events</th><th>Spent</th></tr></thead>
+              <tbody>${topAtt.map(a => `<tr><td>${a.name}</td><td>${a.events_attended}</td><td>${fmtCurrency(a.total_spent)}</td></tr>`).join('')}</tbody>
+            </table></div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-bottom:20px">
+          <div class="card">
+            <div class="section-title">Revenue by Category <span class="badge">GROUP BY + HAVING</span></div>
+            ${data.byCategory.map(c => `
+              <div class="bar-group">
+                <div class="bar-label"><span>${c.category}</span><span>${fmtCurrency(c.revenue)}</span></div>
+                <div class="bar-track"><div class="bar-fill" style="width:${data.byCategory[0].revenue ? c.revenue/data.byCategory[0].revenue*100 : 0}%;background:var(--accent3)"></div></div>
+              </div>`).join('')}
+          </div>
+          <div class="card">
+            <div class="section-title">Monthly Events <span class="badge">DATE_FORMAT + Aggregate</span></div>
+            ${data.monthly.map(m => `
+              <div class="bar-group">
+                <div class="bar-label"><span>${m.month}</span><span>${m.event_count} events</span></div>
+                <div class="bar-track"><div class="bar-fill" style="width:${m.event_count * 20}%;background:var(--accent2)"></div></div>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-title">Events with No Registrations <span class="badge">NOT IN (SET op)</span></div>
+            ${noReg.length ? `<div class="table-wrap"><table><thead><tr><th>Title</th><th>Date</th><th>Status</th></tr></thead>
+              <tbody>${noReg.map(e => `<tr><td>${e.title}</td><td>${fmtDate(e.event_date)}</td><td>${e.status}</td></tr>`).join('')}</tbody></table></div>`
+              : `<div class="empty" style="padding:20px"><div>All events have registrations! ✅</div></div>`}
+          </div>
+          <div class="card">
+            <div class="section-title">Completed Events Without Feedback <span class="badge">NOT EXISTS</span></div>
+            ${noFb.length ? `<div class="table-wrap"><table><thead><tr><th>Title</th><th>Date</th></tr></thead>
+              <tbody>${noFb.map(e => `<tr><td>${e.title}</td><td>${fmtDate(e.event_date)}</td></tr>`).join('')}</tbody></table></div>`
+              : `<div class="empty" style="padding:20px"><div>All completed events have feedback ✅</div></div>`}
+          </div>
+        </div>
+        <div class="card" style="margin-top:20px">
+          <div class="section-title">All Participants (Organizers ∪ Attendees) <span class="badge">UNION</span></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Event</th></tr></thead>
+            <tbody>${data.allParticipants.map(p => `<tr><td>${p.name}</td><td style="color:var(--muted)">${p.email}</td><td><span class="status-badge ${p.role_type==='Organizer'?'status-upcoming':'status-ongoing'}">${p.role_type}</span></td><td>${p.event}</td></tr>`).join('')}
+            </tbody>
+          </table></div>
+        </div>`;
+    } catch(e) { $id('analyticsContent').innerHTML = `<div class="empty">${e.message}</div>`; }
+  },
+
+  // MANAGE EVENTS
+  async ['manage-events']() {
+    const main = $id('mainContent');
+    main.innerHTML = `
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="page-title">Manage Events</div><div class="page-subtitle">Create and manage your events</div></div>
+        <button class="btn btn-primary" onclick="openCreateEvent()">+ New Event</button>
+      </div>
+      <div id="manageList"><div class="loader-full"><div class="spinner"></div></div></div>`;
+    await loadManageEvents();
+  },
+
+  // VENUES
+  async venues() {
+    const main = $id('mainContent');
+    main.innerHTML = `<div class="page-header"><div class="page-title">Venues</div><div class="page-subtitle">Available venues</div></div><div id="venueList"><div class="loader-full"><div class="spinner"></div></div></div>`;
+    try {
+      const venues = await api('/venues');
+      $id('venueList').innerHTML = `<div class="grid-3">${venues.map(v => `
+        <div class="card">
+          <div style="font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:6px">🏛️ ${v.name}</div>
+          <div style="color:var(--muted);font-size:13px">${v.location}</div>
+          <div style="color:var(--muted);font-size:13px">📍 ${v.city}</div>
+          <div style="margin-top:10px;display:flex;justify-content:space-between;font-size:13px">
+            <span>Capacity</span><strong>${v.capacity.toLocaleString()}</strong>
+          </div>
+        </div>`).join('')}</div>`;
+    } catch(e) { $id('venueList').innerHTML = `<div class="empty">${e.message}</div>`; }
+  }
+};
+
+// ── EVENTS HELPERS ──
+function renderEvents(events) {
+  const grid = $id('eventsGrid');
+  if (!events.length) { grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🎪</div><div>No events found</div></div>`; return; }
+  grid.innerHTML = events.map(e => `
+    <div class="event-card" onclick="showEventDetail(${e.event_id})">
+      <div class="event-card-top">
+        <span class="event-cat ${catClass(e.category)}">${e.category}</span>
+        <div class="event-title">${e.title}</div>
+        <div class="event-meta">
+          <span>📅 ${fmtDate(e.event_date)} · ${e.start_time?.slice(0,5)} – ${e.end_time?.slice(0,5)}</span>
+          <span>🏛️ ${e.venue_name}, ${e.venue_city}</span>
+          <span>👤 ${e.organizer_name}</span>
+        </div>
+      </div>
+      <div class="event-card-footer">
+        <div class="event-price ${e.ticket_price == 0 ? 'free' : ''}">${e.ticket_price == 0 ? 'FREE' : fmtCurrency(e.ticket_price)}</div>
+        <span class="status-badge ${statusClass(e.status)}">${e.status}</span>
+      </div>
+    </div>`).join('');
+}
+
+function filterEvents() {
+  if (!window._allEvents) return;
+  const q = $id('searchQ').value.toLowerCase();
+  const cat = $id('filterCat').value;
+  const st  = $id('filterStatus').value;
+  renderEvents(window._allEvents.filter(e =>
+    (!q || e.title.toLowerCase().includes(q) || e.venue_city?.toLowerCase().includes(q)) &&
+    (!cat || e.category === cat) &&
+    (!st  || e.status === st)
+  ));
+}
+
+async function showEventDetail(id) {
+  const ev = await api(`/events/${id}`);
+  const fb = await api(`/events/${id}/feedback`);
+  const already = currentUser ? (await api('/registrations/my')).some(r => r.event_title === ev.title) : false;
+
+  $id('detailTitle').textContent = ev.title;
+  $id('detailContent').innerHTML = `
+    <div style="margin-bottom:16px">
+      <span class="event-cat ${catClass(ev.category)}">${ev.category}</span>
+      <span class="status-badge ${statusClass(ev.status)}" style="margin-left:8px">${ev.status}</span>
+    </div>
+    <p style="color:var(--muted);margin-bottom:16px">${ev.description || 'No description provided.'}</p>
+    <div class="grid-2" style="margin-bottom:16px;gap:10px">
+      <div class="card" style="padding:14px"><div style="font-size:12px;color:var(--muted)">DATE & TIME</div><div style="font-weight:600">${fmtDate(ev.event_date)}</div><div style="color:var(--muted);font-size:13px">${ev.start_time?.slice(0,5)} – ${ev.end_time?.slice(0,5)}</div></div>
+      <div class="card" style="padding:14px"><div style="font-size:12px;color:var(--muted)">VENUE</div><div style="font-weight:600">${ev.venue_name}</div><div style="color:var(--muted);font-size:13px">${ev.venue_city}</div></div>
+      <div class="card" style="padding:14px"><div style="font-size:12px;color:var(--muted)">CAPACITY</div><div style="font-weight:600">${ev.stats?.total_registrations || 0} / ${ev.max_capacity}</div><div style="color:var(--muted);font-size:13px">${ev.stats?.seats_remaining || ev.max_capacity} seats left</div></div>
+      <div class="card" style="padding:14px"><div style="font-size:12px;color:var(--muted)">TICKET</div><div style="font-weight:600;${ev.ticket_price == 0?'color:var(--accent3)':''}">${ev.ticket_price == 0 ? 'FREE' : fmtCurrency(ev.ticket_price)}</div><div style="color:var(--muted);font-size:13px">per person</div></div>
+    </div>
+    ${ev.speakers?.length ? `<div style="margin-bottom:16px"><div class="section-title" style="font-size:14px">Speakers</div>${ev.speakers.map(s=>`<div class="card" style="padding:12px;margin-bottom:8px"><strong>${s.name}</strong> · <span style="color:var(--muted)">${s.expertise}</span><div style="font-size:12px;color:var(--muted);margin-top:4px">${s.bio}</div></div>`).join('')}</div>` : ''}
+    ${fb.length ? `<div style="margin-bottom:16px"><div class="section-title" style="font-size:14px">Reviews (avg: ${ev.stats?.avg_rating || '—'} ⭐)</div>${fb.map(f=>`<div class="card" style="padding:12px;margin-bottom:8px"><div style="display:flex;justify-content:space-between"><strong>${f.reviewer}</strong><span class="rating">${stars(f.rating)}</span></div><div style="font-size:13px;color:var(--muted);margin-top:4px">${f.comments||''}</div></div>`).join('')}</div>` : ''}
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('detailModal')">Close</button>
+      ${ev.status === 'upcoming' && !already ? `<button class="btn btn-primary" onclick="registerEvent(${ev.event_id})">🎫 Register — ${ev.ticket_price == 0 ? 'FREE' : fmtCurrency(ev.ticket_price)}</button>` : ''}
+      ${already ? `<span class="btn btn-success" style="cursor:default">✓ Registered</span>` : ''}
+    </div>`;
+  openModal('detailModal');
+}
+
+async function registerEvent(eventId) {
+  try {
+    await api('/registrations', { method: 'POST', body: JSON.stringify({ event_id: eventId }) });
+    toast('Registered successfully! 🎉');
+    closeModal('detailModal');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function payReg(id) {
+  try { await api(`/registrations/${id}/pay`, { method: 'PUT' }); toast('Payment confirmed!'); pages['my-registrations'](); }
+  catch(e) { toast(e.message, 'error'); }
+}
+async function cancelReg(id) {
+  if (!confirm('Cancel this registration?')) return;
+  try { await api(`/registrations/${id}`, { method: 'DELETE' }); toast('Registration cancelled'); pages['my-registrations'](); }
+  catch(e) { toast(e.message, 'error'); }
+}
+
+// ── MANAGE EVENTS ──
+async function loadManageEvents() {
+  try {
+    const events = await api('/events');
+    const el = $id('manageList');
+    if (!events.length) { el.innerHTML = `<div class="empty"><div class="empty-icon">🎪</div><div>No events yet. Create one!</div></div>`; return; }
+    el.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>Title</th><th>Date</th><th>Category</th><th>Capacity</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>${events.map(e => `<tr>
+        <td><strong>${e.title}</strong></td>
+        <td>${fmtDate(e.event_date)}</td>
+        <td><span class="event-cat ${catClass(e.category)}" style="font-size:11px">${e.category}</span></td>
+        <td>${e.max_capacity}</td>
+        <td>${e.ticket_price == 0 ? 'Free' : fmtCurrency(e.ticket_price)}</td>
+        <td><span class="status-badge ${statusClass(e.status)}">${e.status}</span></td>
+        <td style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="editEvent(${e.event_id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteEvent(${e.event_id})">Del</button>
+        </td>
+      </tr>`).join('')}</tbody></table></div>`;
+  } catch(e) { $id('manageList').innerHTML = `<div class="empty">${e.message}</div>`; }
+}
+
+async function openCreateEvent() {
+  editingEventId = null;
+  $id('eventModalTitle').textContent = 'Create New Event';
+  ['evTitle','evDesc','evCapacity'].forEach(id => $id(id).value = '');
+  $id('evPrice').value = '0';
+  await loadVenueOptions();
+  openModal('eventModal');
+}
+
+async function editEvent(id) {
+  editingEventId = id;
+  $id('eventModalTitle').textContent = 'Edit Event';
+  const ev = await api(`/events/${id}`);
+  $id('evTitle').value = ev.title;
+  $id('evDesc').value = ev.description || '';
+  $id('evDate').value = ev.event_date?.slice(0,10) || '';
+  $id('evStart').value = ev.start_time?.slice(0,5) || '';
+  $id('evEnd').value = ev.end_time?.slice(0,5) || '';
+  $id('evCapacity').value = ev.max_capacity;
+  $id('evPrice').value = ev.ticket_price;
+  $id('evCategory').value = ev.category;
+  await loadVenueOptions(ev.venue_id);
+  openModal('eventModal');
+}
+
+async function loadVenueOptions(selectedId) {
+  const venues = await api('/venues');
+  $id('evVenue').innerHTML = venues.map(v => `<option value="${v.venue_id}" ${v.venue_id == selectedId ? 'selected' : ''}>${v.name} — ${v.city}</option>`).join('');
+}
+
+async function saveEvent() {
+  const body = { title: $id('evTitle').value, description: $id('evDesc').value, event_date: $id('evDate').value, start_time: $id('evStart').value, end_time: $id('evEnd').value, venue_id: $id('evVenue').value, category: $id('evCategory').value, max_capacity: $id('evCapacity').value, ticket_price: $id('evPrice').value };
+  try {
+    if (editingEventId) { await api(`/events/${editingEventId}`, { method: 'PUT', body: JSON.stringify({...body, status:'upcoming'}) }); toast('Event updated!'); }
+    else { await api('/events', { method: 'POST', body: JSON.stringify(body) }); toast('Event created! 🎉'); }
+    closeModal('eventModal'); loadManageEvents();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteEvent(id) {
+  if (!confirm('Delete this event? This cannot be undone.')) return;
+  try { await api(`/events/${id}`, { method: 'DELETE' }); toast('Event deleted'); loadManageEvents(); }
+  catch(e) { toast(e.message, 'error'); }
+}
+
+// ── AUTO LOGIN ──
+window.onload = () => {
+  const t = localStorage.getItem('ems_token');
+  const u = localStorage.getItem('ems_user');
+  if (t && u) { token = t; currentUser = JSON.parse(u); initApp(); }
+};
+</script>
+</body>
+</html>
